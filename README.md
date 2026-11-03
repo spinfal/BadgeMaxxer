@@ -11,8 +11,8 @@
   <img src="https://img.shields.io/badge/platform-Windows-EDCB40?style=for-the-badge&logo=windows&logoColor=white&labelColor=1a1a1a" alt="Windows" />
   <img src="https://img.shields.io/badge/dependencies-stdlib%20only-C9A40E?style=for-the-badge&labelColor=1a1a1a" alt="stdlib only" />
   <img src="https://img.shields.io/badge/single%20file-badgemaxxer.py-C9A40E?style=for-the-badge&logo=files&logoColor=white&labelColor=1a1a1a" alt="Single file" />
-  <a href="https://github.com/ItzMeShadow999/BadgeMaxxer/stargazers">
-    <img src="https://img.shields.io/github/stars/ItzMeShadow999/BadgeMaxxer?style=for-the-badge&logo=github&logoColor=white&color=EDCB40&labelColor=1a1a1a" alt="GitHub stars" />
+  <a href="https://github.com/spinfal/BadgeMaxxer/stargazers">
+    <img src="https://img.shields.io/github/stars/spinfal/BadgeMaxxer?style=for-the-badge&logo=github&logoColor=white&color=EDCB40&labelColor=1a1a1a" alt="GitHub stars" />
   </a>
 </p>
 
@@ -50,7 +50,7 @@
 PowerShell:
 
 ```powershell
-irm https://raw.githubusercontent.com/ItzMeShadow999/BadgeMaxxer/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/spinfal/BadgeMaxxer/main/install.ps1 | iex
 ```
 
 This downloads BadgeMaxxer and the Watcher into `%USERPROFILE%\BadgeMaxxer`, installs the Python packages, and starts it. Your `session.json` is never overwritten.

@@ -1,5 +1,5 @@
-$Owner  = "ItzMeShadow999"
-$Repo   = "badgemaxxer"
+$Owner  = "spinfal"
+$Repo   = "BadgeMaxxer"
 $Branch = "main"
 $Base   = "https://raw.githubusercontent.com/$Owner/$Repo/$Branch"
 $Dir    = Join-Path $env:USERPROFILE "BadgeMaxxer"

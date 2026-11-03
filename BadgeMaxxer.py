@@ -680,8 +680,6 @@ class AccountSessionState:
     total_stream_sessions: int = 0
     last_guild_id: str = ""
     last_channel_id: str = ""
-    github_user: str = ""
-    github_token: str = ""
 
     @classmethod
     def restore(cls) -> "AccountSessionState":
@@ -704,6 +702,8 @@ class AccountSessionState:
             except Exception:
                 pass
         existing.update(asdict(self))
+        existing.pop("github_user", None)
+        existing.pop("github_token", None)
         STATE_STORAGE_PATH.write_text(json.dumps(existing, indent=2), encoding="utf-8")
 
     def save(self) -> None:
@@ -2734,99 +2734,6 @@ class GatewayStreamEngine:
 
 
 
-STAR_REPO = "ItzMeShadow999/BadgeMaxxer"
-
-
-GITHUB_CLIENT_ID = "Ov23liu4TVIYMEPe5ArO"
-STAR_ERROR = ""
-
-
-def _github_request(url: str, data: dict | None = None, token: str = "",
-                    accept: str = "application/vnd.github+json") -> tuple[int, Any]:
-    global STAR_ERROR
-    headers = {"user-agent": "BadgeMaxxer", "accept": accept}
-    body = None
-    if data is not None:
-        body = urllib.parse.urlencode(data).encode("utf-8")
-        headers["content-type"] = "application/x-www-form-urlencoded"
-    if token:
-        headers["authorization"] = f"Bearer {token}"
-    req = urllib.request.Request(url, data=body, headers=headers)
-    try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            status, raw = resp.status, resp.read().decode("utf-8", "replace")
-    except urllib.error.HTTPError as exc:
-        status = exc.code
-        try:
-            raw = exc.read().decode("utf-8", "replace")
-        except Exception:
-            raw = ""
-        STAR_ERROR = f"GitHub rate limit hit (HTTP {status}), try again in a while" if status in (403, 429) else f"HTTP {status}"
-    except Exception as exc:
-        STAR_ERROR = f"{type(exc).__name__}: {exc}"
-        return 0, {}
-    try:
-        return status, json.loads(raw)
-    except ValueError:
-        return status, {}
-
-
-def github_device_login(T: "TerminalInterface") -> str:
-    if GITHUB_CLIENT_ID.startswith("PASTE"):
-        T.failure("github", "GITHUB_CLIENT_ID is not set in BadgeMaxxer.py (create an OAuth App with Device Flow enabled).")
-        return ""
-    st, d = _github_request("https://github.com/login/device/code", data={"client_id": GITHUB_CLIENT_ID}, accept="application/json")
-    if st != 200 or not isinstance(d, dict) or "device_code" not in d:
-        reason = (d.get("error_description") if isinstance(d, dict) else "") or STAR_ERROR or st
-        T.failure("github", f"could not start GitHub login ({reason})")
-        return ""
-    url = d.get("verification_uri", "https://github.com/login/device")
-    T.log(f"Open {T.COLOR_PRIMARY}{url}{T.COLOR_TEXT} and enter the code {T.COLOR_PRIMARY}{d['user_code']}{T.COLOR_TEXT}")
-    try:
-        webbrowser.open(url)
-    except Exception:
-        pass
-    T.log("waiting for you to approve in the browser...")
-    interval = int(d.get("interval", 5))
-    deadline = time.time() + int(d.get("expires_in", 900))
-    while time.time() < deadline:
-        time.sleep(interval)
-        st, r = _github_request(
-            "https://github.com/login/oauth/access_token",
-            data={"client_id": GITHUB_CLIENT_ID, "device_code": d["device_code"],
-                  "grant_type": "urn:ietf:params:oauth:grant-type:device_code"},
-            accept="application/json",
-        )
-        if st == 0:
-            continue
-        if isinstance(r, dict) and r.get("access_token"):
-            return str(r["access_token"])
-        err = r.get("error") if isinstance(r, dict) else None
-        if err == "authorization_pending":
-            continue
-        if err == "slow_down":
-            interval = int(r.get("interval", interval + 5))
-            continue
-        if err == "access_denied":
-            T.failure("github", "login was cancelled")
-            return ""
-        if err == "expired_token":
-            break
-        T.failure("github", f"login failed ({err or st})")
-        return ""
-    T.failure("github", "login timed out, run BadgeMaxxer again")
-    return ""
-
-
-def check_star(token: str) -> tuple[bool | None, int]:
-    st, _ = _github_request(f"https://api.github.com/user/starred/{STAR_REPO}", token=token)
-    if st == 204:
-        return True, st
-    if st == 404:
-        return False, st
-    return None, st
-
-
 class ApplicationController:
     def __init__(self) -> None:
         self.terminal = TerminalInterface()
@@ -2836,49 +2743,10 @@ class ApplicationController:
         self.fabricator: TelemetryEventFabricator | None = None
         self.catalog: list[DetectableTitle] = []
 
-    def _star_gate(self, quiet: bool = False) -> bool:
-        T = self.terminal
-        token = self.state.github_token
-        for _ in range(2):
-            if not token:
-                if quiet:
-                    T.failure("star", "GitHub login is no longer valid.")
-                    return False
-                T.log(f"BadgeMaxxer needs you to log in with GitHub and star https://github.com/{STAR_REPO}")
-                token = github_device_login(T)
-                if not token:
-                    return False
-                self.state.github_token = token
-                self.state.persist()
-            elif not quiet:
-                T.log("checking your star...")
-            starred, st = check_star(token)
-            if st != 401:
-                break
-            self.state.github_token = ""
-            self.state.persist()
-            token = ""
-        else:
-            T.failure("star", "GitHub rejected the login, run BadgeMaxxer again.")
-            return False
-        if starred is None:
-            T.failure("star", f"could not verify your star ({STAR_ERROR or st}). BadgeMaxxer needs this check to run.")
-            return False
-        if not starred:
-            T.failure("star", f"you have not starred {STAR_REPO}. Star it, then run BadgeMaxxer again.")
-            return False
-        if not quiet:
-            T.success("star", "verified, thanks for the star")
-        return True
-
     def start(self) -> None:
         zoom_out_terminal()
         self.terminal.display_header()
         time.sleep(0.3)
-
-        if not self._star_gate():
-            self.terminal.failure("star", "Star the repo to use BadgeMaxxer.")
-            return
 
         if not self.state.token:
             self._prompt_account_token()
@@ -3510,9 +3378,6 @@ class ApplicationController:
             choice = arrow_menu("Select what badge to level", options)
             print()
             if choice is None or choice == 8:
-                break
-            if not self._star_gate(quiet=True):
-                T.failure("star", "Star check failed, BadgeMaxxer is stopping.")
                 break
             if choice == 0:
                 self.level_up_all()
