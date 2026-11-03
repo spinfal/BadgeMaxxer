@@ -30,6 +30,8 @@
 
 ---
 
+> This fork is intended to remove the forced repo star requirement, and overall just act as a code filter for personal reassurance. P.S. I starred the parent repo, just of my own free will!
+
 ## Features
 
 - **Game Time**: few titles, long sessions. Defaults to 3 games for 10h each.
