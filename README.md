@@ -52,10 +52,23 @@
 PowerShell:
 
 ```powershell
-irm https://raw.githubusercontent.com/spinfal/BadgeMaxxer/main/install.ps1 | iex
+irm https://github.com/spinfal/BadgeMaxxer/releases/latest/download/install.ps1 | iex
 ```
 
 This downloads BadgeMaxxer and the Watcher into `%USERPROFILE%\BadgeMaxxer`, installs the Python packages, and starts it. Your `session.json` is never overwritten.
+
+### Verified installs
+
+The installer pins to a release tag, downloads that release's `SHA256SUMS`, and checks every file against it before saving. A mismatch aborts the install and nothing is written.
+
+To pin an exact version, or to read the installer before running it:
+
+```powershell
+$env:BADGEMAXXER_TAG = "vX.Y.Z"
+irm https://github.com/spinfal/BadgeMaxxer/releases/download/vX.Y.Z/install.ps1 -OutFile install.ps1
+notepad install.ps1
+.\install.ps1
+```
 
 ## Usage
 
@@ -105,3 +118,7 @@ This tool uses a user token and sends generated telemetry and streaming activity
 <sub>Made by <a href="https://github.com/ItzMeShadow999">ItzMeShadow999</a></sub>
 
 </div>
+
+<sub><sub><sub><sub><sub><b>Credits</b></sub></sub></sub></sub></sub>
+<br>
+<sub><sub><sub><sub><sub>BadgeMaxxer is built on the discord-badge-spoofer by revere-group</sub></sub></sub></sub></sub>
